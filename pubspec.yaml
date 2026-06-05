@@ -1,0 +1,29 @@
+name: orderpilot_pro
+description: OrderPilot Pro - WooCommerce Order Notification Manager
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  onesignal_flutter: ^5.2.0
+  shared_preferences: ^2.3.2
+  url_launcher: ^6.3.1
+  provider: ^6.1.2
+  google_fonts: ^6.2.1
+  intl: ^0.19.0
+  timeago: ^3.7.0
+  cupertino_icons: ^1.0.8
+  webview_flutter: ^4.10.0
+  webview_flutter_android: ^4.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
