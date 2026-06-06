@@ -1,17 +1,22 @@
-# orderpilot_pro
+# OrderPilot Pro
 
-A new Flutter project.
+Flutter app for receiving and managing WooCommerce order notifications.
 
-## Getting Started
+## Run From VS Code
 
-This project is a starting point for a Flutter application.
+Install Flutter stable, Android SDK, and the Flutter extension for VS Code.
+Then clone the repository and run:
 
-A few resources to get you started if this is your first Flutter project:
+```powershell
+flutter pub get
+flutter doctor
+flutter run
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+Select an Android emulator or a USB-connected Android device from VS Code
+before running the app.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Private Backend Sources
+
+The local `Website Code/` directory contains private Cloudflare Worker and
+WordPress plugin sources. It is intentionally excluded from this repository.
