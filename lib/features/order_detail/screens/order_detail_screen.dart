@@ -107,6 +107,17 @@ class OrderDetailScreen extends StatelessWidget {
                     label: 'Received At',
                     value: _formatTime(notification.receivedAt),
                   ),
+                  if (notification.firstSeenBy.isNotEmpty) ...[
+                    _divider(),
+                    _InfoRow(
+                      icon: Icons.visibility_outlined,
+                      label: 'First Seen',
+                      value: notification.firstSeenAt == null
+                          ? notification.firstSeenBy
+                          : '${notification.firstSeenBy} at ${DateFormat('MMM d, h:mm a').format(notification.firstSeenAt!)}',
+                      valueColor: AppColors.success,
+                    ),
+                  ],
                 ],
               ),
             ),

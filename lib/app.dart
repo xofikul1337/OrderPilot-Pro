@@ -16,7 +16,7 @@ class OrderPilotApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
       ],
       child: MaterialApp(
-        title: 'Sukunaat Orders',
+        title: 'OrderPilot Pro',
         debugShowCheckedModeBanner: false,
         navigatorKey: appNavigatorKey,
         theme: ThemeData(

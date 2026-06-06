@@ -7,6 +7,9 @@ class OrderNotification {
   final String phone;
   final String url;
   final DateTime receivedAt;
+  final String firstSeenBy;
+  final DateTime? firstSeenAt;
+  final int viewCount;
   bool isRead;
 
   OrderNotification({
@@ -18,20 +21,32 @@ class OrderNotification {
     required this.phone,
     required this.url,
     required this.receivedAt,
+    this.firstSeenBy = '',
+    this.firstSeenAt,
+    this.viewCount = 0,
     this.isRead = false,
   });
 
   factory OrderNotification.fromJson(Map<String, dynamic> json) {
     return OrderNotification(
-      id: json['id'] as String,
-      orderId: json['order_id'] as String,
-      title: json['title'] as String,
-      body: json['body'] as String,
+      id: (json['id'] ?? json['order_id']).toString(),
+      orderId: json['order_id'].toString(),
+      title: json['title'] as String? ?? '',
+      body: (json['body'] ?? json['message']) as String? ?? '',
       customerName: json['customer_name'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       url: json['url'] as String? ?? '',
-      receivedAt: DateTime.parse(json['received_at'] as String),
-      isRead: json['is_read'] as bool? ?? false,
+      receivedAt: DateTime.parse(
+          (json['created_at'] ?? json['received_at']).toString()),
+      firstSeenBy: json['first_seen_by'] as String? ?? '',
+      firstSeenAt: json['first_seen_at'] == null ||
+              json['first_seen_at'].toString().isEmpty
+          ? null
+          : DateTime.tryParse(json['first_seen_at'].toString()),
+      viewCount: (json['view_count'] as num?)?.toInt() ?? 0,
+      isRead: json['is_read'] as bool? ??
+          (json['first_seen_at'] != null &&
+              json['first_seen_at'].toString().isNotEmpty),
     );
   }
 
@@ -44,10 +59,19 @@ class OrderNotification {
         'phone': phone,
         'url': url,
         'received_at': receivedAt.toIso8601String(),
+        'first_seen_by': firstSeenBy,
+        'first_seen_at': firstSeenAt?.toIso8601String(),
+        'view_count': viewCount,
         'is_read': isRead,
       };
 
-  OrderNotification copyWith({bool? isRead}) => OrderNotification(
+  OrderNotification copyWith({
+    bool? isRead,
+    String? firstSeenBy,
+    DateTime? firstSeenAt,
+    int? viewCount,
+  }) =>
+      OrderNotification(
         id: id,
         orderId: orderId,
         title: title,
@@ -56,6 +80,9 @@ class OrderNotification {
         phone: phone,
         url: url,
         receivedAt: receivedAt,
+        firstSeenBy: firstSeenBy ?? this.firstSeenBy,
+        firstSeenAt: firstSeenAt ?? this.firstSeenAt,
+        viewCount: viewCount ?? this.viewCount,
         isRead: isRead ?? this.isRead,
       );
 

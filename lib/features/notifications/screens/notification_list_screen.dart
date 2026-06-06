@@ -22,12 +22,14 @@ class NotificationListScreen extends StatefulWidget {
       _NotificationListScreenState();
 }
 
-class _NotificationListScreenState extends State<NotificationListScreen> {
+class _NotificationListScreenState extends State<NotificationListScreen>
+    with WidgetsBindingObserver {
   StreamSubscription<String>? _tapSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<NotificationProvider>().load();
       if (!kIsWeb) {
@@ -41,8 +43,16 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tapSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      context.read<NotificationProvider>().refresh();
+    }
   }
 
   void _listenNotificationTaps() {
@@ -67,13 +77,14 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
     if (mounted) _navigateToOrder(orderId);
   }
 
-  void _navigateToOrder(String orderId) {
+  Future<void> _navigateToOrder(String orderId) async {
     final provider = context.read<NotificationProvider>();
-    final matches =
-        provider.allNotifications.where((n) => n.orderId == orderId);
+    var matches = provider.allNotifications.where((n) => n.orderId == orderId);
     if (matches.isEmpty) return;
 
-    provider.markAsRead(orderId);
+    await provider.markAsRead(orderId);
+    matches = provider.allNotifications.where((n) => n.orderId == orderId);
+    if (!mounted || matches.isEmpty) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -156,13 +167,17 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                               final n = provider.notifications[i];
                               return NotificationCard(
                                 notification: n,
-                                onTap: () {
-                                  provider.markAsRead(n.orderId);
+                                onTap: () async {
+                                  await provider.markAsRead(n.orderId);
+                                  if (!context.mounted) return;
+                                  final updated = provider.allNotifications
+                                      .firstWhere((item) =>
+                                          item.orderId == n.orderId);
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          OrderDetailScreen(notification: n),
+                                          OrderDetailScreen(notification: updated),
                                     ),
                                   );
                                 },

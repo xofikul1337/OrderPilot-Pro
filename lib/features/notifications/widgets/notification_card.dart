@@ -129,6 +129,18 @@ class NotificationCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (notification.firstSeenBy.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        'Seen by ${notification.firstSeenBy}'
+                        '${notification.viewCount > 1 ? ' +${notification.viewCount - 1}' : ''}',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,

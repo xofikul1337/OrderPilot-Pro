@@ -86,21 +86,12 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Sukunaat Orders',
+                  'OrderPilot Pro',
                   style: GoogleFonts.inter(
                     fontSize: 28,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                     letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'OrderPilot Pro',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: AppColors.textMuted,
-                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ],

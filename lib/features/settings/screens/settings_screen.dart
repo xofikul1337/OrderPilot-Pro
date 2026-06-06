@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/services/notification_service.dart';
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/worker_api_service.dart';
 import '../../notifications/providers/notification_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -20,8 +22,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _vibrationEnabled = true;
   StorageService? _storage;
   final _storeCodeController = TextEditingController();
+  final _staffNameController = TextEditingController();
   bool _connecting = false;
   String _connectedCode = '';
+  String _staffName = '';
 
   @override
   void initState() {
@@ -32,24 +36,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _storeCodeController.dispose();
+    _staffNameController.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
     _storage = await StorageService.getInstance();
     if (!mounted) return;
+    final savedCode = _storage!.getStoreCode();
+    final hasSharedConnection = _storage!.getApiToken().isNotEmpty;
     setState(() {
       _soundEnabled = _storage!.getSoundEnabled();
       _vibrationEnabled = _storage!.getVibrationEnabled();
-      _connectedCode = _storage!.getStoreCode();
+      _connectedCode = hasSharedConnection ? savedCode : '';
+      _staffName = _storage!.getStaffName();
+      if (!hasSharedConnection && savedCode.isNotEmpty) {
+        _storeCodeController.text = savedCode;
+      }
     });
   }
 
   Future<void> _connect() async {
     final code = _storeCodeController.text.trim();
-    if (code.length != 6) {
+    final staffName = _staffNameController.text.trim();
+    if (code.length != 6 || staffName.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Please enter a 6-digit store code.',
+        content: Text('Enter your name and a valid 6-digit store code.',
             style: GoogleFonts.inter(color: Colors.white)),
         backgroundColor: AppColors.warning,
         behavior: SnackBarBehavior.floating,
@@ -57,12 +69,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
     setState(() => _connecting = true);
-    await NotificationService.connectStore(code);
-    await _storage!.setStoreCode(code);
+    try {
+      await WorkerApiService.connect(storeCode: code, staffName: staffName);
+      await NotificationService.connectStore(code);
+    } catch (error) {
+      if (!mounted) return;
+      if (kDebugMode) debugPrint('Store connection failed: $error');
+      final message = error is WorkerApiException
+          ? error.userMessage
+          : 'Could not connect to the store. Check your internet and try again.';
+      setState(() => _connecting = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(message,
+            style: GoogleFonts.inter(color: Colors.white)),
+        backgroundColor: AppColors.danger,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+      ));
+      return;
+    }
     if (!mounted) return;
     setState(() {
       _connecting = false;
       _connectedCode = code;
+      _staffName = staffName;
     });
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Connected to store $code. Notifications active.',
@@ -74,13 +104,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _disconnect() async {
     setState(() => _connecting = true);
+    try {
+      await WorkerApiService.disconnect();
+    } catch (_) {
+      // OneSignal and local connection are still cleared.
+    }
     await NotificationService.disconnectStore();
-    await _storage!.setStoreCode('');
+    await _storage!.clearConnection();
     if (!mounted) return;
     setState(() {
       _connecting = false;
       _connectedCode = '';
+      _staffName = '';
       _storeCodeController.clear();
+      _staffNameController.clear();
     });
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text('Disconnected from store.',
@@ -120,7 +157,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed == true && mounted) {
-      await context.read<NotificationProvider>().clearAll();
+      try {
+        await context.read<NotificationProvider>().clearAll();
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Could not clear server history. Try again online.',
+              style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+        ));
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('History cleared',
@@ -165,11 +213,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _connectedCode.isNotEmpty
               ? _ConnectedCard(
                   code: _connectedCode,
+                  staffName: _staffName,
                   loading: _connecting,
                   onDisconnect: _disconnect,
                 )
               : _ConnectForm(
                   controller: _storeCodeController,
+                  staffNameController: _staffNameController,
                   loading: _connecting,
                   onConnect: _connect,
                 ),
@@ -301,11 +351,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
 class _ConnectedCard extends StatelessWidget {
   final String code;
+  final String staffName;
   final bool loading;
   final VoidCallback onDisconnect;
 
   const _ConnectedCard({
     required this.code,
+    required this.staffName,
     required this.loading,
     required this.onDisconnect,
   });
@@ -339,6 +391,10 @@ class _ConnectedCard extends StatelessWidget {
                             fontWeight: FontWeight.w700,
                             color: AppColors.success,
                             letterSpacing: 4)),
+                    if (staffName.isNotEmpty)
+                      Text(staffName,
+                          style: GoogleFonts.inter(
+                              fontSize: 12, color: AppColors.textMuted)),
                   ],
                 ),
               ),
@@ -377,11 +433,13 @@ class _ConnectedCard extends StatelessWidget {
 
 class _ConnectForm extends StatelessWidget {
   final TextEditingController controller;
+  final TextEditingController staffNameController;
   final bool loading;
   final VoidCallback onConnect;
 
   const _ConnectForm({
     required this.controller,
+    required this.staffNameController,
     required this.loading,
     required this.onConnect,
   });
@@ -398,6 +456,33 @@ class _ConnectForm extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          TextField(
+            controller: staffNameController,
+            textCapitalization: TextCapitalization.words,
+            style: GoogleFonts.inter(
+                fontSize: 15, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Your name',
+              prefixIcon: const Icon(Icons.person_outline_rounded,
+                  color: AppColors.textMuted),
+              filled: true,
+              fillColor: AppColors.background,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: AppColors.primary, width: 2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           TextField(
             controller: controller,
             keyboardType: TextInputType.number,
