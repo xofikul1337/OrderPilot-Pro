@@ -52,6 +52,24 @@ Modern 64-bit phones can use:
 build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
 ```
 
+## Windows Release Build
+
+Install Visual Studio Build Tools with the Desktop development with C++ workload, then enable Windows Developer Mode for Flutter plugin symlinks.
+
+Build the Windows desktop app with:
+
+```powershell
+flutter build windows --release
+```
+
+The runnable Windows app folder is:
+
+```text
+build/windows/x64/runner/Release
+```
+
+Keep the full `Release` folder together when sharing the Windows app. The `.exe` needs the `data` folder and DLL files beside it.
+
 ## Backend Notes
 
 The private Cloudflare Worker and WordPress plugin sources are kept in the local `Website Code/` folder and are intentionally excluded from this app repository. The live Worker currently uses Cloudflare D1 for app data and KV only for license dashboard data.
