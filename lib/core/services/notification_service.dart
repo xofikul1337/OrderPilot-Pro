@@ -6,6 +6,10 @@ import 'storage_service.dart';
 
 class NotificationService {
   static const _appId = 'f76ee6a2-ad3d-48f0-b7b4-474bbed97796';
+  static bool get isPushSupported =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   static String? _pendingOrderId;
   static bool get hasPendingNavigation => _pendingOrderId != null;
@@ -16,7 +20,7 @@ class NotificationService {
   static Stream<String> get onNotificationTap => _tapStreamController.stream;
 
   static Future<void> initialize() async {
-    if (kIsWeb) return;
+    if (!isPushSupported) return;
 
     await OneSignal.initialize(_appId);
 
@@ -68,7 +72,7 @@ class NotificationService {
   }
 
   static Future<void> connectStore(String storeCode) async {
-    if (kIsWeb) return;
+    if (!isPushSupported) return;
     await OneSignal.Notifications.requestPermission(true);
     await OneSignal.User.pushSubscription.optIn();
     await OneSignal.User.addTagWithKey('store_code', storeCode);
@@ -85,7 +89,7 @@ class NotificationService {
   }
 
   static Future<void> disconnectStore() async {
-    if (kIsWeb) return;
+    if (!isPushSupported) return;
     await OneSignal.User.removeTag('store_code');
   }
 
@@ -100,10 +104,10 @@ class NotificationService {
       orderId: orderId,
       title: notification.title ?? 'New Order #$orderId',
       body: body,
-      customerName: (data['customer_name'] as String?) ??
+      customerName:
+          (data['customer_name'] as String?) ??
           OrderNotification.extractCustomerName(body),
-      phone:
-          (data['phone'] as String?) ?? OrderNotification.extractPhone(body),
+      phone: (data['phone'] as String?) ?? OrderNotification.extractPhone(body),
       url: (data['url'] as String?) ?? '',
       receivedAt: DateTime.now(),
       isRead: false,

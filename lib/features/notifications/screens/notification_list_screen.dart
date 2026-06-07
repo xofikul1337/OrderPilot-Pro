@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
@@ -25,6 +23,7 @@ class NotificationListScreen extends StatefulWidget {
 class _NotificationListScreenState extends State<NotificationListScreen>
     with WidgetsBindingObserver {
   StreamSubscription<String>? _tapSub;
+  Timer? _desktopRefreshTimer;
 
   @override
   void initState() {
@@ -32,11 +31,14 @@ class _NotificationListScreenState extends State<NotificationListScreen>
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await context.read<NotificationProvider>().load();
-      if (!kIsWeb) {
+      if (NotificationService.isPushSupported) {
         // Ask permission here so it doesn't block startup/splash screen.
-        OneSignal.Notifications.requestPermission(true);
         await _checkPendingNavigation();
         _listenNotificationTaps();
+      } else {
+        _desktopRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+          if (mounted) context.read<NotificationProvider>().refresh();
+        });
       }
     });
   }
@@ -45,6 +47,7 @@ class _NotificationListScreenState extends State<NotificationListScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _tapSub?.cancel();
+    _desktopRefreshTimer?.cancel();
     super.dispose();
   }
 

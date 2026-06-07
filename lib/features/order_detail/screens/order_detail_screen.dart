@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,9 +21,23 @@ class OrderDetailScreen extends StatelessWidget {
     return OrderNotification.extractCustomerName(notification.body);
   }
 
-  void _openUrl(BuildContext context) {
+  Future<void> _openUrl(BuildContext context) async {
     final url = notification.url;
     if (url.isEmpty) return;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+
+    final useExternalBrowser =
+        !kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+            defaultTargetPlatform == TargetPlatform.linux ||
+            defaultTargetPlatform == TargetPlatform.macOS);
+    if (useExternalBrowser) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return;
+    }
+
+    if (!context.mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -48,8 +63,10 @@ class OrderDetailScreen extends StatelessWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textPrimary),
+          icon: const Icon(
+            Icons.arrow_back_ios_rounded,
+            color: AppColors.textPrimary,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -96,8 +113,11 @@ class OrderDetailScreen extends StatelessWidget {
                         label: 'Phone (tap to call)',
                         value: notification.phone,
                         valueColor: AppColors.primary,
-                        trailing: const Icon(Icons.call_rounded,
-                            size: 18, color: AppColors.primary),
+                        trailing: const Icon(
+                          Icons.call_rounded,
+                          size: 18,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ],

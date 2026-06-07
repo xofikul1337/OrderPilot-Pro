@@ -100,7 +100,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Connected to store $code. Notifications active.',
+          NotificationService.isPushSupported
+              ? 'Connected to store $code. Notifications active.'
+              : 'Connected to store $code. Orders sync while the app is open.',
           style: GoogleFonts.inter(color: Colors.white),
         ),
         backgroundColor: AppColors.success,

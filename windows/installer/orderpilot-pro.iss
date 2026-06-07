@@ -1,5 +1,5 @@
 #define MyAppName "OrderPilot Pro"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Shofikul Islam"
 #define MyAppExeName "orderpilot_pro.exe"
 

@@ -1,7 +1,7 @@
 name: orderpilot_pro
 description: OrderPilot Pro - WooCommerce Order Notification Manager
 publish_to: 'none'
-version: 1.0.0+14
+version: 1.0.1+15
 
 environment:
   sdk: ^3.12.1
