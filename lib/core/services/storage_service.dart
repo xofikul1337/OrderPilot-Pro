@@ -5,8 +5,6 @@ import '../models/order_notification.dart';
 
 class StorageService {
   static const String _notificationsKey = 'notifications';
-  static const String _soundEnabledKey = 'sound_enabled';
-  static const String _vibrationEnabledKey = 'vibration_enabled';
   static const String _pendingNavKey = 'pending_nav_order_id';
   static const String _storeCodeKey = 'store_code';
   static const String _staffNameKey = 'staff_name';
@@ -85,11 +83,6 @@ class StorageService {
     final jsonString = json.encode(notifications.map((n) => n.toJson()).toList());
     await _prefs!.setString(_notificationsKey, jsonString);
   }
-
-  bool getSoundEnabled() => _prefs!.getBool(_soundEnabledKey) ?? true;
-  bool getVibrationEnabled() => _prefs!.getBool(_vibrationEnabledKey) ?? true;
-  Future<void> setSoundEnabled(bool v) => _prefs!.setBool(_soundEnabledKey, v);
-  Future<void> setVibrationEnabled(bool v) => _prefs!.setBool(_vibrationEnabledKey, v);
 
   Future<String?> consumePendingNav() async {
     await _reload();

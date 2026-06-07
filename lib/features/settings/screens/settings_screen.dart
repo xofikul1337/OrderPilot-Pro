@@ -11,15 +11,15 @@ import '../../../core/services/worker_api_service.dart';
 import '../../notifications/providers/notification_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final bool showBackButton;
+
+  const SettingsScreen({super.key, this.showBackButton = true});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = true;
   StorageService? _storage;
   final _storeCodeController = TextEditingController();
   final _staffNameController = TextEditingController();
@@ -46,8 +46,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final savedCode = _storage!.getStoreCode();
     final hasSharedConnection = _storage!.getApiToken().isNotEmpty;
     setState(() {
-      _soundEnabled = _storage!.getSoundEnabled();
-      _vibrationEnabled = _storage!.getVibrationEnabled();
       _connectedCode = hasSharedConnection ? savedCode : '';
       _staffName = _storage!.getStaffName();
       if (!hasSharedConnection && savedCode.isNotEmpty) {
@@ -60,12 +58,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final code = _storeCodeController.text.trim();
     final staffName = _staffNameController.text.trim();
     if (code.length != 6 || staffName.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Enter your name and a valid 6-digit store code.',
-            style: GoogleFonts.inter(color: Colors.white)),
-        backgroundColor: AppColors.warning,
-        behavior: SnackBarBehavior.floating,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Enter your name and a valid 6-digit store code.',
+            style: GoogleFonts.inter(color: Colors.white),
+          ),
+          backgroundColor: AppColors.warning,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
     setState(() => _connecting = true);
@@ -79,13 +81,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? error.userMessage
           : 'Could not connect to the store. Check your internet and try again.';
       setState(() => _connecting = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(message,
-            style: GoogleFonts.inter(color: Colors.white)),
-        backgroundColor: AppColors.danger,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message, style: GoogleFonts.inter(color: Colors.white)),
+          backgroundColor: AppColors.danger,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+        ),
+      );
       return;
     }
     if (!mounted) return;
@@ -94,12 +97,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _connectedCode = code;
       _staffName = staffName;
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Connected to store $code. Notifications active.',
-          style: GoogleFonts.inter(color: Colors.white)),
-      backgroundColor: AppColors.success,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Connected to store $code. Notifications active.',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _disconnect() async {
@@ -119,12 +126,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _storeCodeController.clear();
       _staffNameController.clear();
     });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('Disconnected from store.',
-          style: GoogleFonts.inter(color: Colors.white)),
-      backgroundColor: AppColors.warning,
-      behavior: SnackBarBehavior.floating,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Disconnected from store.',
+          style: GoogleFonts.inter(color: Colors.white),
+        ),
+        backgroundColor: AppColors.warning,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _confirmClearHistory() async {
@@ -132,26 +143,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(AppStrings.clearHistory,
-            style: GoogleFonts.inter(
-                color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
-        content: Text(AppStrings.confirmClear,
-            style: GoogleFonts.inter(color: AppColors.textMuted, height: 1.5)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          AppStrings.clearHistory,
+          style: GoogleFonts.inter(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Text(
+          AppStrings.confirmClear,
+          style: GoogleFonts.inter(color: AppColors.textMuted, height: 1.5),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(AppStrings.cancel,
-                style: GoogleFonts.inter(color: AppColors.textMuted)),
+            child: Text(
+              AppStrings.cancel,
+              style: GoogleFonts.inter(color: AppColors.textMuted),
+            ),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.danger, elevation: 0),
-            child: Text(AppStrings.confirm,
-                style: GoogleFonts.inter(
-                    color: Colors.white, fontWeight: FontWeight.w600)),
+              backgroundColor: AppColors.danger,
+              elevation: 0,
+            ),
+            child: Text(
+              AppStrings.confirm,
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -161,21 +185,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
         await context.read<NotificationProvider>().clearAll();
       } catch (error) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Could not clear server history. Try again online.',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: AppColors.danger,
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not clear server history. Try again online.',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: AppColors.danger,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
         return;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('History cleared',
-              style: GoogleFonts.inter(color: Colors.white)),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'History cleared',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -187,16 +219,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded,
-              color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+        automaticallyImplyLeading: false,
+        leading: widget.showBackButton
+            ? IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios_rounded,
+                  color: AppColors.textPrimary,
+                ),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
+        title: Text(
+          AppStrings.settings,
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
         ),
-        title: Text(AppStrings.settings,
-            style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary)),
       ),
       body: ListView(
         padding: const EdgeInsets.all(20),
@@ -207,7 +247,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Text(
             AppStrings.storeCodeHint,
             style: GoogleFonts.inter(
-                fontSize: 12, color: AppColors.textMuted, height: 1.5),
+              fontSize: 12,
+              color: AppColors.textMuted,
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 10),
           _connectedCode.isNotEmpty
@@ -243,8 +286,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       isLast
-                          ? const Icon(Icons.check_circle_rounded,
-                              size: 22, color: AppColors.success)
+                          ? const Icon(
+                              Icons.check_circle_rounded,
+                              size: 22,
+                              color: AppColors.success,
+                            )
                           : Container(
                               width: 22,
                               height: 22,
@@ -253,25 +299,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 borderRadius: BorderRadius.circular(11),
                               ),
                               child: Center(
-                                child: Text('${e.key + 1}',
-                                    style: GoogleFonts.inter(
-                                        fontSize: 11,
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w700)),
+                                child: Text(
+                                  '${e.key + 1}',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                               ),
                             ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(e.value,
-                            style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: isLast
-                                    ? AppColors.success
-                                    : AppColors.textMuted,
-                                fontWeight: isLast
-                                    ? FontWeight.w600
-                                    : FontWeight.w400,
-                                height: 1.5)),
+                        child: Text(
+                          e.value,
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: isLast
+                                ? AppColors.success
+                                : AppColors.textMuted,
+                            fontWeight: isLast
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            height: 1.5,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -281,39 +333,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 28),
           // ── Preferences ─────────────────────────────
-          _SectionLabel(AppStrings.preferences),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                _ToggleRow(
-                  icon: Icons.volume_up_rounded,
-                  label: AppStrings.notificationSound,
-                  value: _soundEnabled,
-                  onChanged: (v) async {
-                    setState(() => _soundEnabled = v);
-                    await _storage!.setSoundEnabled(v);
-                  },
-                ),
-                const Divider(color: AppColors.border, height: 1),
-                _ToggleRow(
-                  icon: Icons.vibration_rounded,
-                  label: AppStrings.vibration,
-                  value: _vibrationEnabled,
-                  onChanged: (v) async {
-                    setState(() => _vibrationEnabled = v);
-                    await _storage!.setVibrationEnabled(v);
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 28),
           // ── Danger Zone ─────────────────────────────
           _SectionLabel('DANGER ZONE', color: AppColors.danger),
           const SizedBox(height: 10),
@@ -323,22 +342,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: OutlinedButton.icon(
               onPressed: _confirmClearHistory,
               icon: const Icon(Icons.delete_outline_rounded, size: 18),
-              label: Text(AppStrings.clearHistory,
-                  style: GoogleFonts.inter(
-                      fontSize: 14, fontWeight: FontWeight.w600)),
+              label: Text(
+                AppStrings.clearHistory,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.danger,
                 side: const BorderSide(color: AppColors.danger, width: 1.5),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
           const SizedBox(height: 40),
           Center(
-            child: Text('Version 1.0.0',
-                style: GoogleFonts.inter(
-                    fontSize: 12, color: AppColors.textMuted)),
+            child: Text(
+              'Version 1.0.0',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
+            ),
           ),
           const SizedBox(height: 20),
         ],
@@ -375,26 +403,40 @@ class _ConnectedCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.check_circle_rounded,
-                  color: AppColors.success, size: 22),
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.success,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Connected to store',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, color: AppColors.success)),
-                    Text(code,
-                        style: GoogleFonts.robotoMono(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.success,
-                            letterSpacing: 4)),
+                    Text(
+                      'Connected to store',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppColors.success,
+                      ),
+                    ),
+                    Text(
+                      code,
+                      style: GoogleFonts.robotoMono(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.success,
+                        letterSpacing: 4,
+                      ),
+                    ),
                     if (staffName.isNotEmpty)
-                      Text(staffName,
-                          style: GoogleFonts.inter(
-                              fontSize: 12, color: AppColors.textMuted)),
+                      Text(
+                        staffName,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.textMuted,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -408,19 +450,28 @@ class _ConnectedCard extends StatelessWidget {
                     width: 16,
                     height: 16,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.danger))
+                      strokeWidth: 2,
+                      color: AppColors.danger,
+                    ),
+                  )
                 : TextButton(
                     onPressed: onDisconnect,
                     style: TextButton.styleFrom(
                       foregroundColor: AppColors.danger,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text('Disconnect',
-                        style: GoogleFonts.inter(
-                            fontSize: 12, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'Disconnect',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ),
           ),
         ],
@@ -460,11 +511,15 @@ class _ConnectForm extends StatelessWidget {
             controller: staffNameController,
             textCapitalization: TextCapitalization.words,
             style: GoogleFonts.inter(
-                fontSize: 15, color: AppColors.textPrimary),
+              fontSize: 15,
+              color: AppColors.textPrimary,
+            ),
             decoration: InputDecoration(
               hintText: 'Your name',
-              prefixIcon: const Icon(Icons.person_outline_rounded,
-                  color: AppColors.textMuted),
+              prefixIcon: const Icon(
+                Icons.person_outline_rounded,
+                color: AppColors.textMuted,
+              ),
               filled: true,
               fillColor: AppColors.background,
               border: OutlineInputBorder(
@@ -477,8 +532,10 @@ class _ConnectForm extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -491,21 +548,25 @@ class _ConnectForm extends StatelessWidget {
               LengthLimitingTextInputFormatter(6),
             ],
             style: GoogleFonts.robotoMono(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                letterSpacing: 6),
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+              letterSpacing: 6,
+            ),
             textAlign: TextAlign.center,
             decoration: InputDecoration(
               hintText: '000000',
               hintStyle: GoogleFonts.robotoMono(
-                  fontSize: 22,
-                  color: AppColors.textMuted.withAlpha(80),
-                  letterSpacing: 6),
+                fontSize: 22,
+                color: AppColors.textMuted.withAlpha(80),
+                letterSpacing: 6,
+              ),
               filled: true,
               fillColor: AppColors.background,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 14,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: const BorderSide(color: AppColors.border),
@@ -516,8 +577,10 @@ class _ConnectForm extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide:
-                    const BorderSide(color: AppColors.primary, width: 2),
+                borderSide: const BorderSide(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -532,20 +595,25 @@ class _ConnectForm extends StatelessWidget {
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               icon: loading
                   ? const SizedBox(
                       width: 14,
                       height: 14,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: Colors.white),
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                   : const Icon(Icons.link_rounded, size: 16),
               label: Text(
                 loading ? 'Connecting...' : 'Connect to Store',
                 style: GoogleFonts.inter(
-                    fontSize: 13, fontWeight: FontWeight.w600),
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
@@ -564,45 +632,13 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text,
-        style: GoogleFonts.inter(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: color ?? AppColors.textMuted,
-            letterSpacing: 1.2));
-  }
-}
-
-class _ToggleRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  const _ToggleRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: AppColors.textMuted),
-          const SizedBox(width: 12),
-          Expanded(
-              child: Text(label,
-                  style: GoogleFonts.inter(
-                      fontSize: 14, color: AppColors.textPrimary))),
-          Switch(
-              value: value,
-              onChanged: onChanged,
-              activeThumbColor: AppColors.primary,
-              activeTrackColor: AppColors.primary.withAlpha(128)),
-        ],
+    return Text(
+      text,
+      style: GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: color ?? AppColors.textMuted,
+        letterSpacing: 1.2,
       ),
     );
   }

@@ -9,6 +9,7 @@ class NotificationService {
 
   static String? _pendingOrderId;
   static bool get hasPendingNavigation => _pendingOrderId != null;
+  static final Map<String, DateTime> _recentForegroundOrders = {};
 
   static final StreamController<String> _tapStreamController =
       StreamController<String>.broadcast();
@@ -17,12 +18,25 @@ class NotificationService {
   static Future<void> initialize() async {
     if (kIsWeb) return;
 
-    OneSignal.initialize(_appId);
+    await OneSignal.initialize(_appId);
 
-    // Register listeners before requesting permission so no tap is missed.
-    // Foreground: save to history (notification displays automatically)
+    // Foreground: explicitly display each order once. OneSignal continues to
+    // handle background and killed-state notifications normally.
     OneSignal.Notifications.addForegroundWillDisplayListener((event) async {
+      event.preventDefault();
       await _save(event.notification);
+
+      final data = event.notification.additionalData ?? {};
+      final orderId = (data['order_id'] as String?) ?? '';
+      final now = DateTime.now();
+      _recentForegroundOrders.removeWhere(
+        (_, displayedAt) => now.difference(displayedAt).inMinutes >= 5,
+      );
+
+      if (orderId.isEmpty || !_recentForegroundOrders.containsKey(orderId)) {
+        if (orderId.isNotEmpty) _recentForegroundOrders[orderId] = now;
+        event.notification.display();
+      }
     });
 
     // Tap: fired for background, killed, and foreground-shown notifications
@@ -35,6 +49,12 @@ class NotificationService {
         _tapStreamController.add(orderId);
       }
     });
+
+    final storage = await StorageService.getInstance();
+    final storeCode = storage.getStoreCode();
+    if (storeCode.isNotEmpty && storage.getApiToken().isNotEmpty) {
+      await connectStore(storeCode);
+    }
   }
 
   static void setPendingNavigation(String? orderId) {
@@ -49,7 +69,19 @@ class NotificationService {
 
   static Future<void> connectStore(String storeCode) async {
     if (kIsWeb) return;
+    await OneSignal.Notifications.requestPermission(true);
+    await OneSignal.User.pushSubscription.optIn();
     await OneSignal.User.addTagWithKey('store_code', storeCode);
+
+    // A fresh install can take a moment to receive its FCM token. Re-apply the
+    // tag once the OneSignal subscription exists so the first order is not lost.
+    for (var attempt = 0; attempt < 10; attempt++) {
+      if (OneSignal.User.pushSubscription.id != null) {
+        await OneSignal.User.addTagWithKey('store_code', storeCode);
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    }
   }
 
   static Future<void> disconnectStore() async {

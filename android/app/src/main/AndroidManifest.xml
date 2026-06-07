@@ -8,7 +8,10 @@
     <application
         android:label="OrderPilot Pro"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:usesCleartextTraffic="false">
 
         <activity
             android:name=".MainActivity"
@@ -36,7 +39,7 @@
         <!-- FCM default notification channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="orderpilot_high_importance"/>
+            android:value="orderpilot_default_v4"/>
 
         <!-- FCM notification icon -->
         <meta-data

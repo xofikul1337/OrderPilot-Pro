@@ -8,18 +8,18 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/services/notification_service.dart';
 import '../../order_detail/screens/order_detail_screen.dart';
-import '../../settings/screens/settings_screen.dart';
 import '../providers/notification_provider.dart';
 import '../widgets/notification_card.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../shared/widgets/filter_tabs.dart';
 
 class NotificationListScreen extends StatefulWidget {
-  const NotificationListScreen({super.key});
+  final VoidCallback? onOpenSettings;
+
+  const NotificationListScreen({super.key, this.onOpenSettings});
 
   @override
-  State<NotificationListScreen> createState() =>
-      _NotificationListScreenState();
+  State<NotificationListScreen> createState() => _NotificationListScreenState();
 }
 
 class _NotificationListScreenState extends State<NotificationListScreen>
@@ -103,8 +103,11 @@ class _NotificationListScreenState extends State<NotificationListScreen>
         titleSpacing: 16,
         title: Row(
           children: [
-            const Icon(Icons.notifications_rounded,
-                color: AppColors.primary, size: 22),
+            const Icon(
+              Icons.notifications_rounded,
+              color: AppColors.primary,
+              size: 22,
+            ),
             const SizedBox(width: 8),
             Text(
               AppStrings.appName,
@@ -124,20 +127,22 @@ class _NotificationListScreenState extends State<NotificationListScreen>
                     child: Text(
                       AppStrings.markAllRead,
                       style: GoogleFonts.inter(
-                          fontSize: 12,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600),
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   )
                 : const SizedBox.shrink(),
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: AppColors.textMuted, size: 22),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.textMuted,
+              size: 22,
             ),
+            tooltip: 'Settings',
+            onPressed: widget.onOpenSettings,
           ),
         ],
       ),
@@ -153,38 +158,41 @@ class _NotificationListScreenState extends State<NotificationListScreen>
               child: provider.isLoading
                   ? const Center(
                       child: CircularProgressIndicator(
-                          color: AppColors.primary))
+                        color: AppColors.primary,
+                      ),
+                    )
                   : provider.notifications.isEmpty
-                      ? const EmptyState()
-                      : RefreshIndicator(
-                          color: AppColors.primary,
-                          backgroundColor: AppColors.surface,
-                          onRefresh: provider.refresh,
-                          child: ListView.builder(
-                            padding: const EdgeInsets.only(bottom: 24),
-                            itemCount: provider.notifications.length,
-                            itemBuilder: (_, i) {
-                              final n = provider.notifications[i];
-                              return NotificationCard(
-                                notification: n,
-                                onTap: () async {
-                                  await provider.markAsRead(n.orderId);
-                                  if (!context.mounted) return;
-                                  final updated = provider.allNotifications
-                                      .firstWhere((item) =>
-                                          item.orderId == n.orderId);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) =>
-                                          OrderDetailScreen(notification: updated),
-                                    ),
+                  ? const EmptyState()
+                  : RefreshIndicator(
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.surface,
+                      onRefresh: provider.refresh,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        itemCount: provider.notifications.length,
+                        itemBuilder: (_, i) {
+                          final n = provider.notifications[i];
+                          return NotificationCard(
+                            notification: n,
+                            onTap: () async {
+                              await provider.markAsRead(n.orderId);
+                              if (!context.mounted) return;
+                              final updated = provider.allNotifications
+                                  .firstWhere(
+                                    (item) => item.orderId == n.orderId,
                                   );
-                                },
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      OrderDetailScreen(notification: updated),
+                                ),
                               );
                             },
-                          ),
-                        ),
+                          );
+                        },
+                      ),
+                    ),
             ),
           ],
         ),
