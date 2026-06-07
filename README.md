@@ -70,6 +70,18 @@ build/windows/x64/runner/Release
 
 Keep the full `Release` folder together when sharing the Windows app. The `.exe` needs the `data` folder and DLL files beside it.
 
+To create the installable Windows setup file after building the release app:
+
+```powershell
+.\scripts\build_windows_installer.ps1
+```
+
+The installer is created at:
+
+```text
+build/windows/installer/OrderPilot-Pro-Setup.exe
+```
+
 ## Backend Notes
 
 The private Cloudflare Worker and WordPress plugin sources are kept in the local `Website Code/` folder and are intentionally excluded from this app repository. The live Worker currently uses Cloudflare D1 for app data and KV only for license dashboard data.
