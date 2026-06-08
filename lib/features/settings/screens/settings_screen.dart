@@ -363,7 +363,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 40),
           Center(
             child: Text(
-              'Version 1.0.0',
+              'Version 1.0.2',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.textMuted,

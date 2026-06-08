@@ -32,14 +32,7 @@ class WorkerApiService {
   }
 
   static Future<List<OrderNotification>> getOrders() async {
-    final storage = await StorageService.getInstance();
-    final token = storage.getApiToken();
-    if (token.isEmpty) return [];
-    final response = await http.get(
-      Uri.parse('$_baseUrl/orders?limit=500'),
-      headers: {'Authorization': 'Bearer $token'},
-    ).timeout(_timeout);
-    final data = _decode(response, endpoint: '/orders');
+    final data = await _authorizedRequest('GET', '/orders?limit=500');
     final orders = data['orders'] as List<dynamic>? ?? [];
     return orders
         .map((item) => OrderNotification.fromJson(item as Map<String, dynamic>))
@@ -63,7 +56,10 @@ class WorkerApiService {
   }
 
   static Future<Map<String, dynamic>> _authorizedRequest(
-      String method, String path) async {
+    String method,
+    String path, {
+    bool allowReconnect = true,
+  }) async {
     final storage = await StorageService.getInstance();
     final token = storage.getApiToken();
     if (token.isEmpty) throw Exception('Not connected to a store.');
@@ -71,6 +67,14 @@ class WorkerApiService {
       ..headers['Authorization'] = 'Bearer $token';
     final streamed = await request.send().timeout(_timeout);
     final response = await http.Response.fromStream(streamed);
+    if (response.statusCode == 401 && allowReconnect) {
+      final storeCode = storage.getStoreCode();
+      final staffName = storage.getStaffName();
+      if (storeCode.isNotEmpty && staffName.isNotEmpty) {
+        await connect(storeCode: storeCode, staffName: staffName);
+        return _authorizedRequest(method, path, allowReconnect: false);
+      }
+    }
     return _decode(response, endpoint: path);
   }
 
@@ -85,16 +89,21 @@ class WorkerApiService {
       throw WorkerApiException(
         endpoint: endpoint,
         statusCode: response.statusCode,
-        message: response.body.isEmpty ? 'Empty server response.' : response.body,
+        message: response.body.isEmpty
+            ? 'Empty server response.'
+            : response.body,
       );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw WorkerApiException(
         endpoint: endpoint,
         statusCode: response.statusCode,
-        message: (data['message'] ?? data['error'] ?? data['detail'] ??
-                'Request failed.')
-            .toString(),
+        message:
+            (data['message'] ??
+                    data['error'] ??
+                    data['detail'] ??
+                    'Request failed.')
+                .toString(),
       );
     }
     return data;
