@@ -34,8 +34,7 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
     _controller.forward();
 
-    // Skip the full 2-second wait when the app was opened by a notification tap
-    final delay = NotificationService.hasPendingNavigation ? 400 : 2000;
+    final delay = NotificationService.hasPendingNavigation ? 250 : 750;
     Future.delayed(Duration(milliseconds: delay), () {
       if (!mounted) return;
       Navigator.pushReplacement(

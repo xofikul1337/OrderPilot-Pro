@@ -10,6 +10,8 @@ class StorageService {
   static const String _staffNameKey = 'staff_name';
   static const String _deviceIdKey = 'device_id';
   static const String _apiTokenKey = 'api_token';
+  static const String _connectGuideSeenKey = 'connect_guide_seen';
+  static const String _homeTourSeenKey = 'home_tour_seen';
   static const int _maxNotifications = 500;
 
   static StorageService? _instance;
@@ -33,7 +35,9 @@ class StorageService {
     if (jsonString == null) return [];
     try {
       final List<dynamic> jsonList = json.decode(jsonString);
-      return jsonList.map((j) => OrderNotification.fromJson(j as Map<String, dynamic>)).toList();
+      return jsonList
+          .map((j) => OrderNotification.fromJson(j as Map<String, dynamic>))
+          .toList();
     } catch (_) {
       return [];
     }
@@ -41,7 +45,9 @@ class StorageService {
 
   Future<void> saveNotification(OrderNotification notification) async {
     final notifications = await getNotifications();
-    final index = notifications.indexWhere((n) => n.orderId == notification.orderId);
+    final index = notifications.indexWhere(
+      (n) => n.orderId == notification.orderId,
+    );
     if (index == -1) {
       notifications.insert(0, notification);
     } else {
@@ -56,7 +62,9 @@ class StorageService {
     await _persist(notifications);
   }
 
-  Future<void> replaceNotifications(List<OrderNotification> notifications) async {
+  Future<void> replaceNotifications(
+    List<OrderNotification> notifications,
+  ) async {
     final sorted = [...notifications]
       ..sort((a, b) => b.receivedAt.compareTo(a.receivedAt));
     await _persist(sorted.take(_maxNotifications).toList());
@@ -80,7 +88,9 @@ class StorageService {
   Future<void> clearAll() async => _prefs!.remove(_notificationsKey);
 
   Future<void> _persist(List<OrderNotification> notifications) async {
-    final jsonString = json.encode(notifications.map((n) => n.toJson()).toList());
+    final jsonString = json.encode(
+      notifications.map((n) => n.toJson()).toList(),
+    );
     await _prefs!.setString(_notificationsKey, jsonString);
   }
 
@@ -91,12 +101,19 @@ class StorageService {
     return id;
   }
 
-  Future<void> setPendingNav(String orderId) => _prefs!.setString(_pendingNavKey, orderId);
+  Future<void> setPendingNav(String orderId) =>
+      _prefs!.setString(_pendingNavKey, orderId);
 
   String getStoreCode() => _prefs!.getString(_storeCodeKey) ?? '';
-  Future<void> setStoreCode(String code) => _prefs!.setString(_storeCodeKey, code);
+  Future<void> setStoreCode(String code) =>
+      _prefs!.setString(_storeCodeKey, code);
   String getStaffName() => _prefs!.getString(_staffNameKey) ?? '';
   String getApiToken() => _prefs!.getString(_apiTokenKey) ?? '';
+  bool getConnectGuideSeen() => _prefs!.getBool(_connectGuideSeenKey) ?? false;
+  bool getHomeTourSeen() => _prefs!.getBool(_homeTourSeenKey) ?? false;
+  Future<void> setConnectGuideSeen() =>
+      _prefs!.setBool(_connectGuideSeenKey, true);
+  Future<void> setHomeTourSeen() => _prefs!.setBool(_homeTourSeenKey, true);
 
   Future<String> getDeviceId() async {
     final existing = _prefs!.getString(_deviceIdKey);

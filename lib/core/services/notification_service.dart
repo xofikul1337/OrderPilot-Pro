@@ -12,6 +12,8 @@ class NotificationService {
           defaultTargetPlatform == TargetPlatform.iOS);
 
   static String? _pendingOrderId;
+  static bool _initialized = false;
+  static Future<void>? _initializing;
   static bool get hasPendingNavigation => _pendingOrderId != null;
   static final Map<String, DateTime> _recentForegroundOrders = {};
 
@@ -21,7 +23,19 @@ class NotificationService {
 
   static Future<void> initialize() async {
     if (!isPushSupported) return;
+    if (_initialized) return;
+    if (_initializing != null) return _initializing;
 
+    _initializing = _initializeInternal();
+    try {
+      await _initializing;
+    } catch (_) {
+      _initializing = null;
+      rethrow;
+    }
+  }
+
+  static Future<void> _initializeInternal() async {
     await OneSignal.initialize(_appId);
 
     // Foreground: explicitly display each order once. OneSignal continues to
@@ -54,6 +68,8 @@ class NotificationService {
       }
     });
 
+    _initialized = true;
+
     final storage = await StorageService.getInstance();
     final storeCode = storage.getStoreCode();
     if (storeCode.isNotEmpty && storage.getApiToken().isNotEmpty) {
@@ -73,6 +89,7 @@ class NotificationService {
 
   static Future<void> connectStore(String storeCode) async {
     if (!isPushSupported) return;
+    if (!_initialized) await initialize();
     await OneSignal.Notifications.requestPermission(true);
     await OneSignal.User.pushSubscription.optIn();
     await OneSignal.User.addTagWithKey('store_code', storeCode);

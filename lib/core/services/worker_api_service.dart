@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../models/order_detail.dart';
 import '../models/order_notification.dart';
+import 'security_service.dart';
 import 'storage_service.dart';
 
 class WorkerApiService {
@@ -11,6 +13,7 @@ class WorkerApiService {
     required String storeCode,
     required String staffName,
   }) async {
+    await SecurityService.ensureSafeNetwork();
     final storage = await StorageService.getInstance();
     final response = await http
         .post(
@@ -31,12 +34,38 @@ class WorkerApiService {
     );
   }
 
-  static Future<List<OrderNotification>> getOrders() async {
-    final data = await _authorizedRequest('GET', '/orders?limit=500');
+  static Future<OrdersPage> getOrders({
+    int page = 1,
+    int limit = 30,
+    String status = '',
+    String seen = '',
+    String search = '',
+  }) async {
+    final query = <String, String>{
+      'page': page.toString(),
+      'limit': limit.toString(),
+      if (status.isNotEmpty) 'status': status,
+      if (seen.isNotEmpty) 'seen': seen,
+      if (search.trim().isNotEmpty) 'search': search.trim(),
+    };
+    final path = '/orders?${Uri(queryParameters: query).query}';
+    final data = await _authorizedRequest('GET', path);
     final orders = data['orders'] as List<dynamic>? ?? [];
-    return orders
-        .map((item) => OrderNotification.fromJson(item as Map<String, dynamic>))
-        .toList();
+    return OrdersPage(
+      orders: orders
+          .map(
+            (item) => OrderNotification.fromJson(item as Map<String, dynamic>),
+          )
+          .toList(),
+      page: (data['page'] as num?)?.toInt() ?? page,
+      total: (data['total'] as num?)?.toInt() ?? orders.length,
+      totalPages: (data['total_pages'] as num?)?.toInt() ?? 1,
+      summary: Map<String, int>.fromEntries(
+        (data['summary'] as Map<String, dynamic>? ?? const {}).entries.map(
+          (entry) => MapEntry(entry.key, (entry.value as num?)?.toInt() ?? 0),
+        ),
+      ),
+    );
   }
 
   static Future<Map<String, dynamic>?> markSeen(String orderId) async {
@@ -45,6 +74,64 @@ class WorkerApiService {
       '/orders/${Uri.encodeComponent(orderId)}/seen',
     );
     return response['seen'] as Map<String, dynamic>?;
+  }
+
+  static Future<OrderDetail> getOrderDetail(String orderId) async {
+    final data = await _authorizedRequest(
+      'GET',
+      '/orders/${Uri.encodeComponent(orderId)}',
+    );
+    return OrderDetail.fromJson(data['order'] as Map<String, dynamic>);
+  }
+
+  static Future<OrderDetail> updateOrderStatus({
+    required String orderId,
+    required String action,
+  }) async {
+    final data = await _authorizedRequest(
+      'POST',
+      '/orders/${Uri.encodeComponent(orderId)}/status',
+      body: {'action': action},
+    );
+    return OrderDetail.fromJson(data['order'] as Map<String, dynamic>);
+  }
+
+  static Future<OrderDetail> saveOrderNote({
+    required String orderId,
+    required String note,
+  }) async {
+    final data = await _authorizedRequest(
+      'POST',
+      '/orders/${Uri.encodeComponent(orderId)}/note',
+      body: {'note': note},
+    );
+    return OrderDetail.fromJson(data['order'] as Map<String, dynamic>);
+  }
+
+  static Future<Map<String, dynamic>?> claimOrder(String orderId) async {
+    final data = await _authorizedRequest(
+      'POST',
+      '/orders/${Uri.encodeComponent(orderId)}/claim',
+    );
+    return data['assignment'] as Map<String, dynamic>?;
+  }
+
+  static Future<void> unclaimOrder(String orderId) async {
+    await _authorizedRequest(
+      'DELETE',
+      '/orders/${Uri.encodeComponent(orderId)}/claim',
+    );
+  }
+
+  static Future<List<OrderActivity>> getOrderActivity(String orderId) async {
+    final data = await _authorizedRequest(
+      'GET',
+      '/orders/${Uri.encodeComponent(orderId)}/activity',
+    );
+    final items = data['activity'] as List<dynamic>? ?? const [];
+    return items
+        .map((item) => OrderActivity.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   static Future<void> clearHistory() async {
@@ -59,12 +146,18 @@ class WorkerApiService {
     String method,
     String path, {
     bool allowReconnect = true,
+    Map<String, dynamic>? body,
   }) async {
+    await SecurityService.ensureSafeNetwork();
     final storage = await StorageService.getInstance();
     final token = storage.getApiToken();
     if (token.isEmpty) throw Exception('Not connected to a store.');
     final request = http.Request(method, Uri.parse('$_baseUrl$path'))
       ..headers['Authorization'] = 'Bearer $token';
+    if (body != null) {
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode(body);
+    }
     final streamed = await request.send().timeout(_timeout);
     final response = await http.Response.fromStream(streamed);
     if (response.statusCode == 401 && allowReconnect) {
@@ -72,7 +165,12 @@ class WorkerApiService {
       final staffName = storage.getStaffName();
       if (storeCode.isNotEmpty && staffName.isNotEmpty) {
         await connect(storeCode: storeCode, staffName: staffName);
-        return _authorizedRequest(method, path, allowReconnect: false);
+        return _authorizedRequest(
+          method,
+          path,
+          allowReconnect: false,
+          body: body,
+        );
       }
     }
     return _decode(response, endpoint: path);
@@ -108,6 +206,22 @@ class WorkerApiService {
     }
     return data;
   }
+}
+
+class OrdersPage {
+  final List<OrderNotification> orders;
+  final int page;
+  final int total;
+  final int totalPages;
+  final Map<String, int> summary;
+
+  const OrdersPage({
+    required this.orders,
+    required this.page,
+    required this.total,
+    required this.totalPages,
+    required this.summary,
+  });
 }
 
 class WorkerApiException implements Exception {

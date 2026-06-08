@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/models/order_notification.dart';
+import '../../../core/utils/currency_display.dart';
 
 class NotificationCard extends StatelessWidget {
   final OrderNotification notification;
@@ -32,6 +33,12 @@ class NotificationCard extends StatelessWidget {
     final displayName = notification.customerName.isNotEmpty
         ? notification.customerName
         : OrderNotification.extractCustomerName(notification.body);
+    final statusLabel = notification.statusLabel.isNotEmpty
+        ? notification.statusLabel
+        : _statusLabel(notification.status);
+    final totalText = notification.total.isEmpty
+        ? ''
+        : CurrencyDisplay.format(notification.total);
 
     return GestureDetector(
       onTap: onTap,
@@ -39,14 +46,10 @@ class NotificationCard extends StatelessWidget {
         duration: const Duration(milliseconds: 250),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         decoration: BoxDecoration(
-          color: isNew
-              ? AppColors.surface
-              : AppColors.surface.withAlpha(178),
+          color: isNew ? AppColors.surface : AppColors.surface.withAlpha(178),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isNew
-                ? AppColors.primary.withAlpha(80)
-                : AppColors.border,
+            color: isNew ? AppColors.primary.withAlpha(80) : AppColors.border,
           ),
         ),
         child: Padding(
@@ -61,8 +64,7 @@ class NotificationCard extends StatelessWidget {
                   height: 10,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                        isNew ? AppColors.newBadge : AppColors.seenBadge,
+                    color: isNew ? AppColors.newBadge : AppColors.seenBadge,
                   ),
                 ),
               ),
@@ -87,9 +89,19 @@ class NotificationCard extends StatelessWidget {
                             ),
                           ),
                         ),
+                        if (statusLabel.isNotEmpty) ...[
+                          const SizedBox(width: 6),
+                          _Badge(
+                            label: statusLabel,
+                            color: _statusColor(notification.status),
+                          ),
+                        ],
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: isNew
                                 ? AppColors.newBadge.withAlpha(38)
@@ -141,6 +153,40 @@ class NotificationCard extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (notification.assignedTo.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.assignment_ind_outlined,
+                            size: 13,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 5),
+                          Expanded(
+                            child: Text(
+                              'Assigned to ${notification.assignedTo}',
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (totalText.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        totalText,
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: AppColors.warning,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,6 +213,56 @@ class NotificationCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  String _statusLabel(String status) {
+    return switch (status) {
+      'pending' => 'Pending',
+      'processing' => 'Processing',
+      'confirmed' => 'Confirmed',
+      'on-hold' => 'On Hold',
+      'sent-to-courier' => 'Courier',
+      'cancelled' => 'Cancelled',
+      'completed' => 'Completed',
+      _ => '',
+    };
+  }
+
+  Color _statusColor(String status) {
+    return switch (status) {
+      'confirmed' || 'completed' => AppColors.success,
+      'sent-to-courier' => AppColors.primary,
+      'cancelled' => AppColors.danger,
+      'pending' || 'on-hold' => AppColors.warning,
+      _ => AppColors.textMuted,
+    };
+  }
+}
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _Badge({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withAlpha(38),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        label,
+        style: GoogleFonts.inter(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: color,
+          letterSpacing: 0.3,
         ),
       ),
     );

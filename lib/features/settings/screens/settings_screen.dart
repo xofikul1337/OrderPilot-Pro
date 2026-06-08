@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/services/notification_service.dart';
+import '../../../core/services/security_service.dart';
 import '../../../core/services/storage_service.dart';
 import '../../../core/services/worker_api_service.dart';
 import '../../notifications/providers/notification_provider.dart';
@@ -20,6 +22,10 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  static const _privacyPolicyUrl =
+      'https://sukunaat.com/orderpilot-pro/privacy-policy/';
+  static const _supportUrl = 'https://sukunaat.com/contact/';
+
   StorageService? _storage;
   final _storeCodeController = TextEditingController();
   final _staffNameController = TextEditingController();
@@ -77,7 +83,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (error) {
       if (!mounted) return;
       if (kDebugMode) debugPrint('Store connection failed: $error');
-      final message = error is WorkerApiException
+      final message = error is SecurityException
+          ? error.userMessage
+          : error is WorkerApiException
           ? error.userMessage
           : 'Could not connect to the store. Check your internet and try again.';
       setState(() => _connecting = false);
@@ -97,6 +105,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _connectedCode = code;
       _staffName = staffName;
     });
+    await context.read<NotificationProvider>().load();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -128,6 +138,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _storeCodeController.clear();
       _staffNameController.clear();
     });
+    await context.read<NotificationProvider>().load();
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
@@ -212,6 +224,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         );
       }
     }
+  }
+
+  Future<void> _openUrl(String url) async {
+    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   }
 
   @override
@@ -334,6 +350,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           const SizedBox(height: 28),
+          _SectionLabel('LEGAL & SUPPORT'),
+          const SizedBox(height: 10),
+          _SettingsLinkCard(
+            icon: Icons.privacy_tip_outlined,
+            title: 'Privacy Policy',
+            subtitle: 'How OrderPilot Pro handles store and order data',
+            onTap: () => _openUrl(_privacyPolicyUrl),
+          ),
+          const SizedBox(height: 10),
+          _SettingsLinkCard(
+            icon: Icons.support_agent_outlined,
+            title: 'Support',
+            subtitle: 'Get help with setup, connection and notifications',
+            onTap: () => _openUrl(_supportUrl),
+          ),
+          const SizedBox(height: 28),
           // ── Preferences ─────────────────────────────
           // ── Danger Zone ─────────────────────────────
           _SectionLabel('DANGER ZONE', color: AppColors.danger),
@@ -363,7 +395,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 40),
           Center(
             child: Text(
-              'Version 1.0.2',
+              'Version 1.3.1',
               style: GoogleFonts.inter(
                 fontSize: 12,
                 color: AppColors.textMuted,
@@ -378,6 +410,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
 }
 
 // ── Connected state card ────────────────────────────────────────────────────
+
+class _SettingsLinkCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SettingsLinkCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.open_in_new_rounded,
+              color: AppColors.textMuted,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _ConnectedCard extends StatelessWidget {
   final String code;
